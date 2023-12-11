@@ -1,41 +1,53 @@
-version: "3.7"
+version: "3.9"
 services:
-    php:
-        image: php:8.1-fpm
-        container_name: my-laravel-app-php
+    app:
+        build:
+            args:
+                user: devcorize
+                uid: 1000
+            context: ./
+            dockerfile: Dockerfile
+        image: mainapi
+        container_name: mainapi-app
+        restart: unless-stopped
+        working_dir: /var/www/
         volumes:
-            - ./application:/var/www/html
-        working_dir: /var/www/html
+            - ./:/var/www
         networks:
-            - laravel-net
+            - mainapi
+        environment:
+            DB_CONNECTION: pgsql
+            DB_HOST: db
+            DB_PORT: 5432
+            DB_DATABASE: mainapi
+            DB_USERNAME: mainapi
+            DB_PASSWORD: mainapi
+
+    db:
+        image: postgres:13
+        container_name: mainapi-db
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: mainapi
+            POSTGRES_USER: mainapi
+            POSTGRES_PASSWORD: mainapi
+        volumes:
+            - ./docker-compose/postgres:/docker-entrypoint-initdb.d
+        networks:
+            - mainapi
 
     nginx:
-        image: nginx:latest
-        container_name: my-laravel-app-nginx
+        image: nginx:alpine
+        container_name: mainapi-nginx
+        restart: unless-stopped
         ports:
-            - "80:80"
+            - 8000:80
         volumes:
-            - ./application:/var/www/html
-            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-        depends_on:
-            - php
+            - ./:/var/www
+            - ./docker-compose/nginx:/etc/nginx/conf.d/
         networks:
-            - laravel-net
-
-    postgres:
-        image: postgres:latest
-        container_name: my-laravel-app-postgres
-        environment:
-            POSTGRES_DB: laravel_db
-            POSTGRES_USER: laravel_user
-            POSTGRES_PASSWORD: secret_password
-        volumes:
-            - pg-data:/var/lib/postgresql/data
-        networks:
-            - laravel-net
+            - mainapi
 
 networks:
-    laravel-net:
-
-volumes:
-    pg-data:
+    mainapi:
+        driver: bridge
