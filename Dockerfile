@@ -1,17 +1,28 @@
-FROM php:8.2-fpm
-ARG user
-ARG uid
-RUN apt update && apt install -y \
-    git \
+FROM php:8.1.3-fpm-alpine3.15
+
+RUN apt-get update && apt-get install -y \
+    libmcrypt-dev \
+    openssl \
     curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev
-RUN apt clean && rm -rf /var/lib/apt/lists/*
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN useradd -G www-data,root -u "$uid" -d "/home/$user" "$user"
-RUN mkdir -p /home/$user/.composer && \
-    chown -R $user:$user /home/$user
-WORKDIR /var/www
-USER $user
+    git vim unzip cron \
+    --no-install-recommends \
+    && rm -r /var/lib/apt/lists/*
+
+RUN docker-php-ext-install -j$(nproc) \
+    bcmath \
+    pdo_mysql \
+    tokenizer
+
+# Install PHP Xdebug 2.9.8
+RUN pecl install -o xdebug-2.9.8
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g n \
+    && n stable
+
+RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
+CMD ["php-fpm"]
