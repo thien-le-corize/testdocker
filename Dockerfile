@@ -31,8 +31,8 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create www-data group
-RUN groupadd -g 33 www-data
+# Create www-data group if it doesn't exist
+RUN getent group www-data || groupadd -g 33 www-data
 
 # Create system user to run Composer and Artisan Commands
 RUN useradd -ms /bin/bash -u $uid -g www-data $user
