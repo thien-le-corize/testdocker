@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+    app:
+        build:
+            args:
+                user: devcorize
+                uid: 1000
+            context: ./
+            dockerfile: Dockerfile
+        image: mainapi
+        container_name: mainapi-app
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        networks:
+            - mainapi
+        environment:
+            DB_CONNECTION: pgsql
+            DB_HOST: db
+            DB_PORT: 5432
+            DB_DATABASE: mainapi
+            DB_USERNAME: mainapi
+            DB_PASSWORD: mainapi
+
+    db:
+        image: postgres:13
+        container_name: mainapi-db
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: mainapi
+            POSTGRES_USER: mainapi
+            POSTGRES_PASSWORD: mainapi
+        volumes:
+            - ./docker-compose/postgres:/docker-entrypoint-initdb.d
+        networks:
+            - mainapi
+
+    nginx:
+        image: nginx:alpine
+        container_name: mainapi-nginx
+        restart: unless-stopped
+        ports:
+            - 8000:80
+        volumes:
+            - ./:/var/www
+            - ./docker-compose/nginx:/etc/nginx/conf.d/
+        networks:
+            - mainapi
+
+networks:
+    mainapi:
+        driver: bridge
