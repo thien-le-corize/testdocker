@@ -1,28 +1,15 @@
-FROM php:8.1.3-fpm-alpine3.15
+FROM php:8.1-fpm
 
-RUN apt-get update && apt-get install -y \
-    libmcrypt-dev \
-    openssl \
-    curl \
-    git vim unzip cron \
-    --no-install-recommends \
-    && rm -r /var/lib/apt/lists/*
+WORKDIR /var/www/html
 
-RUN docker-php-ext-install -j$(nproc) \
-    bcmath \
-    pdo_mysql \
-    tokenizer
+COPY package.json .
+RUN npm install
 
-# Install PHP Xdebug 2.9.8
-RUN pecl install -o xdebug-2.9.8
+COPY composer.json .
+RUN composer install --no-dev
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY . .
 
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g n \
-    && n stable
+EXPOSE 80
 
-RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
-
-CMD ["php-fpm"]
+CMD ["php", "artisan", "serve"]
